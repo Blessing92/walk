@@ -1,5 +1,13 @@
 # FileManager - A Go CLI Tool for File Management
 
+
+## Be Careful with file operations!
+```aiignore
+Be care when using file operations, especially delete and move commands. Always double-check the paths and filenames to avoid accidental data loss.
+```
+
+
+
 **FileManager** is a cross-platform command-line tool written in Go for managing files and directories on your operating system. It provides a fast and reliable way to perform file operations such as listing, copying, moving, deleting, and viewing file information — all from your terminal.
 
 ---
@@ -7,8 +15,6 @@
 ## 🚀 Features
 
 - List files and directories with detailed metadata
-- Copy files and directories
-- Move/rename files
 - Delete files and folders
 - Create new files or folders
 - Search for files by name or extension
@@ -28,3 +34,6 @@
    git clone https://github.com/yourusername/filemanager.git
    cd filemanager
    go build -o filemanager
+   
+   ```
+### This project is based on the book "Powerful Command-Line Applications in Go" by Ricardo Gerardi.
