@@ -17,15 +17,17 @@ func TestRun(t *testing.T) {
 		expected string
 	}{
 		{name: "NoFilter", rootDir: "testdata",
-			cfg: config{ext: "", size: 0, list: true}, expected: "testdata/dir.log\ntestdata/dir2/script.sh\n"},
+			cfg: config{exts: []string{}, size: 0, list: true}, expected: "testdata/dir.log\ntestdata/dir2/script.sh\ntestdata/file.txt\n"},
 		{name: "FilterExtensionMatch", rootDir: "testdata",
-			cfg: config{ext: ".log", size: 0, list: true}, expected: "testdata/dir.log\n"},
+			cfg: config{exts: []string{".log"}, size: 0, list: true}, expected: "testdata/dir.log\n"},
+		{name: "FilterExtensionMultiMatch", rootDir: "testdata",
+			cfg: config{exts: []string{".log", ".txt"}, size: 0, list: true}, expected: "testdata/dir.log\ntestdata/file.txt\n"},
 		{name: "FilterExtensionsSizeMatch", rootDir: "testdata",
-			cfg: config{ext: ".log", size: 10, list: true}, expected: "testdata/dir.log\n"},
+			cfg: config{exts: []string{".log"}, size: 10, list: true}, expected: "testdata/dir.log\n"},
 		{name: "FilterExtensionsSizeNoMatch", rootDir: "testdata",
-			cfg: config{ext: ".log", size: 20, list: true}, expected: ""},
+			cfg: config{exts: []string{".log"}, size: 20, list: true}, expected: ""},
 		{name: "FilterExtensionNoMatch", rootDir: "testdata",
-			cfg: config{ext: ".gz", size: 0, list: true}, expected: ""},
+			cfg: config{exts: []string{".gz"}, size: 0, list: true}, expected: ""},
 	}
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
@@ -53,11 +55,11 @@ func TestRunDelExtension(t *testing.T) {
 		expected    string
 	}{
 		{name: "DeleteExtensionNoMatch",
-			cfg: config{ext: ".log", del: true}, extNoDelete: ".gz", nDelete: 0, nNoDelete: 10, expected: ""},
+			cfg: config{exts: []string{".log"}, del: true}, extNoDelete: ".gz", nDelete: 0, nNoDelete: 10, expected: ""},
 		{name: "DeleteExtensionMatch",
-			cfg: config{ext: ".log", del: true}, extNoDelete: "", nDelete: 10, nNoDelete: 0, expected: ""},
+			cfg: config{exts: []string{".log"}, del: true}, extNoDelete: "", nDelete: 10, nNoDelete: 0, expected: ""},
 		{name: "DeleteExtensionMixed",
-			cfg: config{ext: ".log", del: true}, extNoDelete: ".gz", nDelete: 5, nNoDelete: 5, expected: ""},
+			cfg: config{exts: []string{".log"}, del: true}, extNoDelete: ".gz", nDelete: 5, nNoDelete: 5, expected: ""},
 	}
 
 	for _, tc := range testCases {
@@ -68,8 +70,8 @@ func TestRunDelExtension(t *testing.T) {
 			)
 
 			temDir, cleanup := createTempDir(t, map[string]int{
-				tc.cfg.ext:     tc.nDelete,
-				tc.extNoDelete: tc.nNoDelete,
+				strings.Join(tc.cfg.exts, ""): tc.nDelete,
+				tc.extNoDelete:                tc.nNoDelete,
 			})
 			tc.cfg.wLog = &logBuffer
 
@@ -131,9 +133,12 @@ func TestRunArchive(t *testing.T) {
 		nArchive     int
 		nNoArchive   int
 	}{
-		{name: "ArchiveExtensionNoMatch", cfg: config{ext: ".log"}, extNoArchive: ".gz", nArchive: 0, nNoArchive: 10},
-		{name: "ArchiveExtensionMatch", cfg: config{ext: ".log"}, extNoArchive: "", nArchive: 10, nNoArchive: 0},
-		{name: "ArchiveExtensionMixed", cfg: config{ext: ".log"}, extNoArchive: ".gz", nArchive: 5, nNoArchive: 5},
+		{name: "ArchiveExtensionNoMatch",
+			cfg: config{exts: []string{".log"}}, extNoArchive: ".gz", nArchive: 0, nNoArchive: 10},
+		{name: "ArchiveExtensionMatch",
+			cfg: config{exts: []string{".log"}}, extNoArchive: "", nArchive: 10, nNoArchive: 0},
+		{name: "ArchiveExtensionMixed",
+			cfg: config{exts: []string{".log"}}, extNoArchive: ".gz", nArchive: 5, nNoArchive: 5},
 	}
 
 	for _, tc := range testCases {
@@ -142,8 +147,8 @@ func TestRunArchive(t *testing.T) {
 
 			// Create temp dirs for RunArchive test
 			tempDir, cleanup := createTempDir(t, map[string]int{
-				tc.cfg.ext:      tc.nArchive,
-				tc.extNoArchive: tc.nNoArchive,
+				strings.Join(tc.cfg.exts, ""): tc.nArchive,
+				tc.extNoArchive:               tc.nNoArchive,
 			})
 			defer cleanup()
 
@@ -156,10 +161,14 @@ func TestRunArchive(t *testing.T) {
 				t.Fatal(err)
 			}
 
-			pattern := filepath.Join(tempDir, fmt.Sprintf("*%s", tc.cfg.ext))
-			expFiles, err := filepath.Glob(pattern)
-			if err != nil {
-				t.Fatal(err)
+			var expFiles []string
+			for _, ext := range tc.cfg.exts {
+				pattern := filepath.Join(tempDir, fmt.Sprintf("*%s", ext))
+				files, err := filepath.Glob(pattern)
+				if err != nil {
+					t.Fatal(err)
+				}
+				expFiles = append(expFiles, files...)
 			}
 
 			expOut := strings.Join(expFiles, "\n")

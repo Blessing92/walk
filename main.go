@@ -7,6 +7,7 @@ import (
 	"log"
 	"os"
 	"path/filepath"
+	"strings"
 )
 
 var (
@@ -16,7 +17,7 @@ var (
 
 type config struct {
 	// extension to filter out
-	ext string
+	exts []string
 	// min file size
 	size int64
 	// list files
@@ -40,7 +41,7 @@ func main() {
 	del := flag.Bool("del", false, "Delete files")
 
 	// Filter options
-	ext := flag.String("ext", "", "File extension to filter out")
+	exts := flag.String("exts", "", "File extensions to filter out separated by ','")
 	size := flag.Int64("size", 0, "Minimum file size")
 	flag.Parse()
 
@@ -54,7 +55,7 @@ func main() {
 	}
 
 	c := config{
-		ext:     *ext,
+		exts:    strings.Split(*exts, ","),
 		size:    *size,
 		list:    *list,
 		del:     *del,
@@ -78,7 +79,7 @@ func run(rootDir string, out io.Writer, cfg config) error {
 				return err
 			}
 
-			if filterOut(path, cfg.ext, cfg.size, info) {
+			if filterOut(path, cfg.exts, cfg.size, info) {
 				return nil
 			}
 

@@ -9,13 +9,23 @@ import (
 	"path/filepath"
 )
 
-func filterOut(path, ext string, minSize int64, info os.FileInfo) bool {
+func filterOut(path string, exts []string, minSize int64, info os.FileInfo) bool {
 	if info.IsDir() || info.Size() < minSize {
 		return true
 	}
 
-	if ext != "" && filepath.Ext(path) != ext {
-		return true
+	if len(exts) != 0 && exts[0] != "" {
+		matched := false
+		for _, ext := range exts {
+			if ext != "" && filepath.Ext(path) == ext {
+				matched = true
+				break
+			}
+		}
+
+		if !matched {
+			return true
+		}
 	}
 	return false
 }
